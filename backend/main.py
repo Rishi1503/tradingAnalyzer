@@ -1,4 +1,4 @@
-from backend.strategies import *
+from strategies import *
 from flask import Flask, request
 import flask
 import json
@@ -13,13 +13,13 @@ def hello():
 
 @app.route('/stockData', methods=["GET", "POST"])
 def stockData():
-    print("stockDAta endpoint reached...")
+    print("stockData endpoint reached...")
     if request.method == "GET":
         with open("stockData.json", "r") as f:
             data = json.load(f)
             data.append({
-                "username": "user4",
-                "pets": ["hamster"]
+                "stockName": "COF",
+                "strategies": [True]
             })
 
             return flask.jsonify(data)

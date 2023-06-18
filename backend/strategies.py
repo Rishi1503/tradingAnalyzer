@@ -1,6 +1,9 @@
 import yfinance as yf
+import numpy as np
+import pandas as pd
+from scipy.signal import argrelextrema
 
-def check_moving_average(symbol, period=25):
+def check_moving_average(symbol, period=7):
     # Get the historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -15,16 +18,11 @@ def check_moving_average(symbol, period=25):
     
     # Determine if the stock should be bought or sold
     if current_price > last_ma:
-        return f"{symbol}: Buy"
+        return True
     else:
         return f"{symbol}: Sell"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = check_moving_average(stock_symbol)
-print(result)
-
-def check_bullish_pattern(symbol, short_period=10, long_period=30):
+def check_bullish_pattern(symbol, short_period=3, long_period=7):
     # Get the historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -38,18 +36,11 @@ def check_bullish_pattern(symbol, short_period=10, long_period=30):
     
     # Determine if a bullish pattern exists
     if last_short_ma > last_long_ma:
-        return f"{symbol}: Bullish pattern detected (Golden Cross)"
+        return True
     else:
         return f"{symbol}: No bullish pattern detected"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = check_bullish_pattern(stock_symbol)
-print(result)
-
-import yfinance as yf
-
-def check_momentum(symbol, period=14):
+def check_momentum(symbol, period=7):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -61,16 +52,11 @@ def check_momentum(symbol, period=14):
     
     # Determine if the momentum indicates upward or downward movement
     if last_roc > 0:
-        return f"{symbol}: Momentum indicates upward movement"
+        return True
     elif last_roc < 0:
         return f"{symbol}: Momentum indicates downward movement"
     else:
         return f"{symbol}: No significant momentum detected"
-
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = check_momentum(stock_symbol)
-print(result)
 
 #dont use this too often!!! breakout strategy
 def should_buy_stock(symbol, lookback_period=20, breakout_threshold=0.02):
@@ -92,34 +78,27 @@ def should_buy_stock(symbol, lookback_period=20, breakout_threshold=0.02):
     else:
         return f"{symbol}: Do not buy the stock (Price < Breakout Level)"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = should_buy_stock(stock_symbol)
-print(result)
-
 def check_on_balance_volume(symbol):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
-    # Calculate OBV
-    stock_data['OBV'] = (stock_data['Volume'] * ((stock_data['Close'] - stock_data['Open']) / stock_data['Open'])).cumsum()
+    # Calculate the On-Balance Volume (OBV)
+    stock_data['OBV'] = (stock_data['Close'] - stock_data['Close'].shift(1)).apply(lambda x: 1 if x > 0 else -1).cumsum()
     
-    # Determine if the OBV is increasing or decreasing
-    obv_trend = stock_data['OBV'].diff().fillna(0)
+    # Get the most recent OBV value
+    current_obv = stock_data['OBV'][-1]
     
-    # Check the most recent OBV trend
-    if obv_trend[-1] > 0:
-        return f"{symbol}: Buy the stock (OBV indicates buying pressure)"
+    # Get the most recent closing price
+    current_close = stock_data['Close'][-1]
+    
+    # Check if the OBV and price are in agreement
+    if current_obv > 0 and current_close > stock_data['Close'].mean():
+        return True
     else:
-        return f"{symbol}: Do not buy the stock (OBV does not indicate buying pressure)"
-
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = check_on_balance_volume(stock_symbol)
-print(result)
+        return f"{symbol}: Do not buy the stock (OBV and price are not in agreement)"
 
 #Accumulation/Distribution line 
-def should_buy_or_sell_stock_with_adline(symbol):
+def check_adline(symbol):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -133,16 +112,11 @@ def should_buy_or_sell_stock_with_adline(symbol):
     
     # Check if the A/D Line suggests buying or selling
     if adline_value > 0:
-        return f"{symbol}: Buy the stock (A/D Line indicates buying pressure)"
+        return True
     elif adline_value < 0:
         return f"{symbol}: Sell the stock (A/D Line indicates selling pressure)"
     else:
         return f"{symbol}: Do not take any action (A/D Line is neutral)"
-
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = should_buy_or_sell_stock_with_adline(stock_symbol)
-print(result)
 
 #dont rely too much on it
 def should_buy_stock_with_adx(symbol):
@@ -176,14 +150,8 @@ def should_buy_stock_with_adx(symbol):
             return f"{symbol}: Do not buy the stock (Downtrend - ADX above 20 and DI- above DI+)"
     else:
         return f"{symbol}: Do not take any action (Weak trend or ranging period - ADX below 20)"
-        
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = should_buy_stock_with_adx(stock_symbol)
-print(result)
-
-def is_stock_worth_buying_with_aroon(symbol, period=15):
+def is_stock_worth_buying_with_aroon(symbol, period=4):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -199,47 +167,67 @@ def is_stock_worth_buying_with_aroon(symbol, period=15):
     aroon_down = stock_data['Aroon-Down'][-1]
     
     # Check if the Aroon values suggest buying the stock
-    if aroon_up > 80 and aroon_down < 20:
+    if aroon_up > 60 and aroon_down < 40:
         return f"{symbol}: Buy the stock (Aroon-Up is above 80 and Aroon-Down is below 20)"
     else:
         return f"{symbol}: Do not buy the stock (Aroon indicator does not suggest buying opportunity)"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = is_stock_worth_buying_with_aroon(stock_symbol)
-print(result)
-
 #don't use yet
-def is_stock_worth_buying_with_rsi(symbol, period=7, oversold_threshold=30, overbought_threshold=70):
+def check_rsi(symbol, period=14, oversold_threshold=40, overbought_threshold=60):
+
+    # change = stock_data["Close"].diff()
+    
+    # # Create two copies of the Closing price Series
+    # change_up = change.copy()
+    # change_down = change.copy()
+
+    # # 
+    # change_up[change_up<0] = 0
+    # change_down[change_down>0] = 0
+
+    # # Verify that we did not make any mistakes
+    # change.equals(change_up+change_down)
+
+    # # Calculate the rolling average of average up and average down
+    # avg_up = change_up.rolling(14).mean()
+    # avg_down = change_down.rolling(14).mean().abs()
+
+    # rsi = 100 * avg_up / (avg_up + avg_down)
+
+    # Take a look at the 20 oldest datapoints
+    
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
-    # Calculate the RSI
-    delta = stock_data['Close'].diff()
-    gain = delta.where(delta > 0, 0)
-    loss = -delta.where(delta < 0, 0)
-    avg_gain = gain.rolling(window=period).mean()
-    avg_loss = loss.rolling(window=period).mean()
-    rs = avg_gain / avg_loss
-    rsi = 100 - (100 / (1 + rs))
+    # Calculate price change and store as a new column
+    stock_data['Price Change'] = stock_data['Close'].diff()
     
-    # Determine the most recent RSI value
-    current_rsi = rsi[-1]
+    # Calculate the gain and loss for each period
+    stock_data['Gain'] = stock_data['Price Change'].apply(lambda x: x if x > 0 else 0)
+    stock_data['Loss'] = stock_data['Price Change'].apply(lambda x: abs(x) if x < 0 else 0)
     
+    # Calculate the average gain and average loss
+    stock_data['Avg Gain'] = stock_data['Gain'].rolling(window=period).mean()
+    stock_data['Avg Loss'] = stock_data['Loss'].rolling(window=period).mean()
+    
+    # Calculate the relative strength (RS)
+    stock_data['RS'] = stock_data['Avg Gain'] / stock_data['Avg Loss']
+    
+    # Calculate the RSI using the RS
+    stock_data['RSI'] = 100 - (100 / (1 + stock_data['RS']))
+    
+    # Get the most recent RSI value
+    current_rsi = stock_data['RSI'][-1]
+    print(current_rsi)
     # Check if the RSI value suggests buying the stock
     if current_rsi > overbought_threshold:
         return f"{symbol}: Do not buy the stock (RSI is overbought)"
     elif current_rsi < oversold_threshold:
-        return f"{symbol}: Buy the stock (RSI is oversold)"
+        return True
     else:
         return f"{symbol}: Do not take any action (RSI does not suggest clear buying opportunity)"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = is_stock_worth_buying_with_rsi(stock_symbol, period=7)
-print(result)
-
-def is_stock_worth_buying_with_vwap(symbol):
+def check_vwap(symbol):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -253,16 +241,11 @@ def is_stock_worth_buying_with_vwap(symbol):
     # Check if the stock price is above or below VWAP
     current_price = stock_data['Close'][-1]
     if current_price > current_vwap:
-        return f"{symbol}: Buy the stock (Price is above VWAP)"
+        return True
     else:
         return f"{symbol}: Do not buy the stock (Price is below VWAP)"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = is_stock_worth_buying_with_vwap(stock_symbol)
-print(result)
-
-def is_stock_worth_buying_with_ema(symbol, short_period=10, long_period=30):
+def check_ema(symbol, short_period=3, long_period=7):
     # Get historical data for the stock
     stock_data = yf.download(symbol)
     
@@ -276,14 +259,9 @@ def is_stock_worth_buying_with_ema(symbol, short_period=10, long_period=30):
     
     # Check if the short-term EMA is above the long-term EMA
     if current_ema_short > current_ema_long:
-        return f"{symbol}: Buy the stock (Short-term EMA is above Long-term EMA)"
+        return True
     else:
         return f"{symbol}: Do not buy the stock (Short-term EMA is below Long-term EMA)"
-
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = is_stock_worth_buying_with_ema(stock_symbol, short_period=10, long_period=30)
-print(result)
 
 def get_fibonacci_levels(high, low):
     # Calculate the Fibonacci retracement levels
@@ -319,30 +297,190 @@ def is_stock_worth_buying_with_fibonacci(symbol):
     
     return f"{symbol}: Do not take any action (Price is not near any Fibonacci levels)"
 
-# Example usage
-stock_symbol = "AAPL"  # Replace with the desired stock symbol
-result = is_stock_worth_buying_with_fibonacci(stock_symbol)
-print(result)
-
-
-# def test_analyze_stock():
-#     test_cases = [
-#         {"symbol": "AAPL", "expected_result": "AAPL: Buy"},
-#         {"symbol": "GOOGL", "expected_result": "GOOGL: Sell"},
-#         # Add more test cases here
-#     ]
+def check_atr(symbol, atr_period=7, atr_multiplier=2.0):
+    # Calculate the Average True Range (ATR)
+    # Get historical data for the stock
+    stock_data = yf.download(symbol)
     
-#     for test_case in test_cases:
-#         symbol = test_case["symbol"]
-#         expected_result = test_case["expected_result"]
-        
-#         result = check_moving_average(symbol)
-        
-#         # Check if the result matches the expected result
-#         if result == expected_result:
-#             print(f"Test case passed for symbol {symbol}")
-#         else:
-#             print(f"Test case failed for symbol {symbol}. Expected: {expected_result}. Got: {result}")
+    stock_data['High-Low'] = stock_data['High'] - stock_data['Low']
+    stock_data['High-PrevClose'] = abs(stock_data['High'] - stock_data['Close'].shift())
+    stock_data['Low-PrevClose'] = abs(stock_data['Low'] - stock_data['Close'].shift())
+    stock_data['TR'] = stock_data[['High-Low', 'High-PrevClose', 'Low-PrevClose']].max(axis=1)
+    stock_data['ATR'] = stock_data['TR'].rolling(window=atr_period).mean()
 
-# # Run the test
-# test_analyze_stock()
+    # Get the most recent ATR value
+    current_atr = stock_data['ATR'].iloc[-1]
+
+    # Calculate the buy threshold
+    buy_threshold = current_atr * atr_multiplier
+
+    # Get the most recent closing price
+    current_close = stock_data['Close'].iloc[-1]
+
+    # Check if the current price is below the buy threshold
+    if current_close < buy_threshold:
+        return True
+    else:
+        return False
+
+def calculate_zigzag(data, deviation_percentage):
+    close_prices = data['Close'].values
+    high_prices = data['High'].values
+    low_prices = data['Low'].values
+
+    current_deviation = deviation_percentage / 100.0
+    current_high = high_prices[0]
+    current_low = low_prices[0]
+    zigzag_points = []
+
+    for i in range(1, len(close_prices)):
+        if high_prices[i] >= current_high * (1 + current_deviation) or low_prices[i] <= current_low * (1 - current_deviation):
+            zigzag_points.append(i - 1)
+            current_deviation = -current_deviation
+            if current_deviation > 0:
+                current_high = high_prices[i]
+            else:
+                current_low = low_prices[i]
+
+        if current_deviation > 0 and high_prices[i] > current_high:
+            current_high = high_prices[i]
+        elif current_deviation < 0 and low_prices[i] < current_low:
+            current_low = low_prices[i]
+
+    zigzag_points.append(len(close_prices) - 1)
+
+    return zigzag_points
+
+def check_zigzag(symbol, deviation_percentage=5.0):
+    stock_data = yf.download(symbol)
+    zigzag_points = calculate_zigzag(stock_data, deviation_percentage)
+
+    # Get the most recent ZigZag point
+    current_zigzag_point = zigzag_points[-1]
+
+    # Check if the current index is the most recent ZigZag high or low
+    if current_zigzag_point == len(stock_data) - 1:
+        return True
+    else:
+        return False
+
+def check_macd(symbol):
+    # Download historical data for the stock
+    stock_data = yf.download(symbol)
+
+    # Calculate MACD using exponential moving averages
+    stock_data['EMA12'] = stock_data['Close'].ewm(span=12).mean()
+    stock_data['EMA26'] = stock_data['Close'].ewm(span=26).mean()
+    stock_data['MACD'] = stock_data['EMA12'] - stock_data['EMA26']
+    stock_data['Signal Line'] = stock_data['MACD'].ewm(span=9).mean()
+
+    # Get the most recent MACD and Signal Line values
+    current_macd = stock_data['MACD'][-1]
+    current_signal_line = stock_data['Signal Line'][-1]
+
+    # Check if MACD crosses above the Signal Line (buy signal)
+    if current_macd > current_signal_line:
+        return True
+    else:
+        return False
+
+def calculate_support_resistance(symbol, sensitivity=0.03):
+    # Download historical data for the stock
+    stock_data = yf.download(symbol, period='30d')
+
+    # Extract close prices
+    close_prices = stock_data['Close']
+    print(close_prices)
+
+    # Find local maxima and minima
+    maxima_indices = argrelextrema(close_prices.values, np.greater)[0]
+    minima_indices = argrelextrema(close_prices.values, np.less)[0]
+
+    # Calculate support levels
+    support_levels = []
+    for index in minima_indices:
+        if all(close_prices[index] < close_prices[higher_index] for higher_index in maxima_indices):
+            support_levels.append(close_prices[index])
+
+    # Calculate resistance levels
+    resistance_levels = []
+    for index in maxima_indices:
+        if all(close_prices[index] > close_prices[lower_index] for lower_index in minima_indices):
+            resistance_levels.append(close_prices[index])
+    return support_levels, resistance_levels
+
+def check_support_resistance(symbol, sensitivity=0.03):
+     # Download historical data for the stock
+    stock_data = yf.download(symbol)
+
+    support_levels, resistance_levels = calculate_support_resistance(stock_data)
+    current_price = stock_data['Close'][-1]
+    
+    if current_price > max(resistance_levels) * (1 + sensitivity):
+        return 'Buy'
+    elif current_price > min(support_levels) * (1 + sensitivity):
+        return 'Buy'
+    elif current_price < max(resistance_levels) * (1 + sensitivity) and current_price > max(resistance_levels) * (1 - sensitivity):
+        return 'Sell'
+    else:
+        return 'Neither'
+
+
+def check_all_stocks():
+    #watchlist = [ESTA,]
+    stocks_to_check = ['EIX','BLKC','YGF','AAON','TSLY','AIZ','DASH','GLBE','QUIK','VTOL','CTG','BITQ','TATT','AUR','PCYG','MLP','ERES','CAH','STNE','BG','ARGT','GHG','TALK','OCS','LSEA','WHF','STBX','COE','HEET']
+    #stocks_to_check = ['ESTA','IJH','ISCB','IT','IWM','MANH','RSPT','SPMD','SPSC','SQSP']
+    stocks_to_buy = []
+    count = 0
+    for stock in stocks_to_check:
+        
+        print(stock)
+        if(check_moving_average(stock) == True):
+            print("average")
+            count = count +1
+        if(check_bullish_pattern(stock)  == True):
+            print("bullish")
+            count = count +1
+        if(check_momentum(stock)):
+            print("momentum")
+            count = count +1
+        if(check_on_balance_volume(stock)  == True):
+            print("volume")
+            count = count +1
+        if(check_adline(stock)  == True):
+            print("adline")
+            count = count +1
+        if(check_rsi(stock)  == True):
+            print("rsi")
+            count = count +1
+        if(check_vwap(stock)  == True):
+            print("vwap")
+            count = count +1
+        if(check_ema(stock)  == True):
+            print("ema")
+            count = count +1
+        if(check_atr(stock)  == True):
+            print("atr")
+            count = count +1
+        if(check_zigzag(stock)  == True):
+            print("zigzag")
+            count = count +1
+        if(check_macd(stock)  == True):
+            print("macd")
+            count = count +1
+        # if(check_support_resistance(stock) == 'Buy'):
+        #     print('support-resistance')
+        #     count = count +1
+        # if(check_support_resistance(stock) == 'Sell'):
+        #     print('hit resistance')
+        #     count = count -1
+        print(count)
+        if(count >= 9):
+            stocks_to_buy.append(stock)
+        count = 0
+
+    print(stocks_to_buy)
+    return stocks_to_buy
+
+
+check_all_stocks()

@@ -1,0 +1,10 @@
+[
+    {
+        "stockName": "GOOG",
+        "strategies": [true, false, true]
+    },
+    {
+        "stockName": "AAPL",
+        "strategies": [true]
+    }
+]
