@@ -1,7 +1,14 @@
 import yfinance as yf
 import numpy as np
 import pandas as pd
-from scipy.signal import argrelextrema
+# import datetime as dt
+# from numpy import arange
+# from pandas import read_csv
+# from sklearn import metrics
+# from sklearn.model_selection import train_test_split
+# from sklearn.ensemble import RandomForestRegressor
+# from sklearn.preprocessing import StandardScaler
+# from sklearn.model_selection import RandomizedSearchCV
 
 def check_moving_average(symbol, period=7):
     # Get the historical data for the stock
