@@ -1,6 +1,7 @@
 import yfinance as yf
 import numpy as np
 import pandas as pd
+from support_resistance import check_1_3_6_months
 # import datetime as dt
 # from numpy import arange
 # from pandas import read_csv
@@ -10,9 +11,7 @@ import pandas as pd
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.model_selection import RandomizedSearchCV
 
-def check_moving_average(symbol, period=7):
-    # Get the historical data for the stock
-    stock_data = yf.download(symbol)
+def check_moving_average(stock_data, period=7):
     
     # Calculate the moving average
     stock_data['MA'] = stock_data['Close'].rolling(window=period).mean()
@@ -29,9 +28,7 @@ def check_moving_average(symbol, period=7):
     else:
         return f"{symbol}: Sell"
 
-def check_bullish_pattern(symbol, short_period=3, long_period=7):
-    # Get the historical data for the stock
-    stock_data = yf.download(symbol)
+def check_bullish_pattern(stock_data, short_period=3, long_period=7):
     
     # Calculate the moving averages
     stock_data['short_MA'] = stock_data['Close'].rolling(window=short_period).mean()
@@ -47,9 +44,7 @@ def check_bullish_pattern(symbol, short_period=3, long_period=7):
     else:
         return f"{symbol}: No bullish pattern detected"
 
-def check_momentum(symbol, period=7):
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
+def check_momentum(stock_data, period=7):
     
     # Calculate the rate of change (ROC) over the specified period
     stock_data['ROC'] = stock_data['Close'].pct_change(period)
@@ -85,13 +80,11 @@ def should_buy_stock(symbol, lookback_period=20, breakout_threshold=0.02):
     else:
         return f"{symbol}: Do not buy the stock (Price < Breakout Level)"
 
-def check_on_balance_volume(symbol):
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
+def check_on_balance_volume(stock_data):
     
     # Calculate the On-Balance Volume (OBV)
     stock_data['OBV'] = (stock_data['Close'] - stock_data['Close'].shift(1)).apply(lambda x: 1 if x > 0 else -1).cumsum()
-    
+    # copy["OBV"] = (np.sign(copy["Close"].diff()) * copy["Volume"]).fillna(0).cumsum()
     # Get the most recent OBV value
     current_obv = stock_data['OBV'][-1]
     
@@ -105,9 +98,7 @@ def check_on_balance_volume(symbol):
         return f"{symbol}: Do not buy the stock (OBV and price are not in agreement)"
 
 #Accumulation/Distribution line 
-def check_adline(symbol):
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
+def check_adline(stock_data):
     
     # Calculate the A/D Line
     stock_data['A/D Line'] = ((stock_data['Close'] - stock_data['Low']) - (stock_data['High'] - stock_data['Close'])) / (stock_data['High'] - stock_data['Low'])
@@ -234,9 +225,7 @@ def check_rsi(symbol, period=14, oversold_threshold=40, overbought_threshold=60)
     else:
         return f"{symbol}: Do not take any action (RSI does not suggest clear buying opportunity)"
 
-def check_vwap(symbol):
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
+def check_vwap(stock_data):
     
     # Calculate VWAP
     stock_data['Typical Price'] = (stock_data['High'] + stock_data['Low'] + stock_data['Close']) / 3
@@ -252,9 +241,7 @@ def check_vwap(symbol):
     else:
         return f"{symbol}: Do not buy the stock (Price is below VWAP)"
 
-def check_ema(symbol, short_period=3, long_period=7):
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
+def check_ema(stock_data, short_period=3, long_period=7):
     
     # Calculate the exponential moving averages
     stock_data['EMA_short'] = stock_data['Close'].ewm(span=short_period, adjust=False).mean()
@@ -304,10 +291,8 @@ def is_stock_worth_buying_with_fibonacci(symbol):
     
     return f"{symbol}: Do not take any action (Price is not near any Fibonacci levels)"
 
-def check_atr(symbol, atr_period=7, atr_multiplier=2.0):
+def check_atr(stock_data, atr_period=7, atr_multiplier=2.0):
     # Calculate the Average True Range (ATR)
-    # Get historical data for the stock
-    stock_data = yf.download(symbol)
     
     stock_data['High-Low'] = stock_data['High'] - stock_data['Low']
     stock_data['High-PrevClose'] = abs(stock_data['High'] - stock_data['Close'].shift())
@@ -358,8 +343,7 @@ def calculate_zigzag(data, deviation_percentage):
 
     return zigzag_points
 
-def check_zigzag(symbol, deviation_percentage=5.0):
-    stock_data = yf.download(symbol)
+def check_zigzag(stock_data, deviation_percentage=5.0):
     zigzag_points = calculate_zigzag(stock_data, deviation_percentage)
 
     # Get the most recent ZigZag point
@@ -371,9 +355,7 @@ def check_zigzag(symbol, deviation_percentage=5.0):
     else:
         return False
 
-def check_macd(symbol):
-    # Download historical data for the stock
-    stock_data = yf.download(symbol)
+def check_macd(stock_data):
 
     # Calculate MACD using exponential moving averages
     stock_data['EMA12'] = stock_data['Close'].ewm(span=12).mean()
@@ -391,102 +373,57 @@ def check_macd(symbol):
     else:
         return False
 
-def calculate_support_resistance(symbol, sensitivity=0.03):
-    # Download historical data for the stock
-    stock_data = yf.download(symbol, period='30d')
-
-    # Extract close prices
-    close_prices = stock_data['Close']
-    print(close_prices)
-
-    # Find local maxima and minima
-    maxima_indices = argrelextrema(close_prices.values, np.greater)[0]
-    minima_indices = argrelextrema(close_prices.values, np.less)[0]
-
-    # Calculate support levels
-    support_levels = []
-    for index in minima_indices:
-        if all(close_prices[index] < close_prices[higher_index] for higher_index in maxima_indices):
-            support_levels.append(close_prices[index])
-
-    # Calculate resistance levels
-    resistance_levels = []
-    for index in maxima_indices:
-        if all(close_prices[index] > close_prices[lower_index] for lower_index in minima_indices):
-            resistance_levels.append(close_prices[index])
-    return support_levels, resistance_levels
-
-def check_support_resistance(symbol, sensitivity=0.03):
-     # Download historical data for the stock
-    stock_data = yf.download(symbol)
-
-    support_levels, resistance_levels = calculate_support_resistance(stock_data)
-    current_price = stock_data['Close'][-1]
-    
-    if current_price > max(resistance_levels) * (1 + sensitivity):
-        return 'Buy'
-    elif current_price > min(support_levels) * (1 + sensitivity):
-        return 'Buy'
-    elif current_price < max(resistance_levels) * (1 + sensitivity) and current_price > max(resistance_levels) * (1 - sensitivity):
-        return 'Sell'
-    else:
-        return 'Neither'
-
-
 def check_all_stocks():
     #watchlist = [ESTA,]
-    #stocks_to_check = ['META','UNH','AVGO','PEP','CRM','ABT','CI','ICE','MITSY','WDAY','MCK','SQ','ABC','CNC','PDYPY','LEN','CSGP','VRSK','CABGY','PODD','AXON','WYNN','ETSY','RYAN','RDY','NE','NBIX','WMS','CLH','ALGM','BLD','CAE']
-    stocks_to_check = ['TKOMY','CNMD','VLVLY','DSGX','INST','WFG','BCH','AVID','DNNGY','SVNDY','BKNG','GLOB','ADUS','TTDKY','HOCPY','DECK','BIO','TTEC','DNZOY','KMTUY','KWR','HTHIY','SPSC','JHX','DCBO','CCSI','IX','PSN','SYIEY','ITOCY','EXPGY','FICO','STN','PDYPY','QTWO','SQ','PEN','DNLI','AER','NOW','BPOP','SYF','SMAR','DUOL','VMC','BRX','WMS','SUI','FSLR','EMR','CMG','NDSN','DVN','SAR','GPI','THC','WSC','HON','SPT','AVTR','CRH']
+    #stocks_to_check = ['ICE', 'MCK', 'ABC', 'CNC', 'RYAN', 'RDY', 'NE', 'ALGM', 'BLD']
+    stocks_to_check = ['BOX','DINO']
     stocks_to_buy = []
     count = 0
     for stock in stocks_to_check:
-        
-        print(stock)
-        if(check_moving_average(stock) == True):
-            print("average")
+        stock_data = yf.download(stock)
+        # print(stock)
+        if(check_moving_average(stock_data) == True):
+            # print("average")
             count = count +1
-        if(check_bullish_pattern(stock)  == True):
-            print("bullish")
+        if(check_bullish_pattern(stock_data)  == True):
+            # print("bullish")
             count = count +1
-        if(check_momentum(stock)):
-            print("momentum")
+        if(check_momentum(stock_data)):
+            # print("momentum")
             count = count +1
-        if(check_on_balance_volume(stock)  == True):
-            print("volume")
+        if(check_on_balance_volume(stock_data)  == True):
+            # print("volume")
             count = count +1
-        if(check_adline(stock)  == True):
-            print("adline")
+        if(check_adline(stock_data)  == True):
+            # print("adline")
             count = count +1
-        if(check_rsi(stock)  == True):
-            print("rsi")
-            count = count +1
-        if(check_vwap(stock)  == True):
-            print("vwap")
-            count = count +1
-        if(check_ema(stock)  == True):
-            print("ema")
-            count = count +1
-        if(check_atr(stock)  == True):
-            print("atr")
-            count = count +1
-        if(check_zigzag(stock)  == True):
-            print("zigzag")
-            count = count +1
-        if(check_macd(stock)  == True):
-            print("macd")
-            count = count +1
-        # if(check_support_resistance(stock) == 'Buy'):
-        #     print('support-resistance')
+        # if(check_rsi(stock_data)  == True):
+        #     # print("rsi")
         #     count = count +1
-        # if(check_support_resistance(stock) == 'Sell'):
-        #     print('hit resistance')
-        #     count = count -1
-        print(count)
+        if(check_vwap(stock_data)  == True):
+            # print("vwap")
+            count = count +1
+        if(check_ema(stock_data)  == True):
+            # print("ema")
+            count = count +1
+        if(check_atr(stock_data)  == True):
+            # print("atr")
+            count = count +1
+        if(check_zigzag(stock_data)  == True):
+            # print("zigzag")
+            count = count +1
+        if(check_macd(stock_data)  == True):
+            # print("macd")
+            count = count +1
+        # print(count)
         if(count >= 9):
             stocks_to_buy.append(stock)
         count = 0
 
-    print(stocks_to_buy)
+    stocks_waitlist = []
+    stocks_to_buy, stocks_waitlist = check_1_3_6_months(stocks_to_buy)
+    print("Filtered stocks to buy: ", stocks_to_buy)
+    print("Waitlisted stocks: ", stocks_waitlist)
     return stocks_to_buy
 
 
