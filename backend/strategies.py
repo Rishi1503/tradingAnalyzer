@@ -435,8 +435,8 @@ def check_support_resistance(symbol, sensitivity=0.03):
 
 def check_all_stocks():
     #watchlist = [ESTA,]
-    stocks_to_check = ['EIX','BLKC','YGF','AAON','TSLY','AIZ','DASH','GLBE','QUIK','VTOL','CTG','BITQ','TATT','AUR','PCYG','MLP','ERES','CAH','STNE','BG','ARGT','GHG','TALK','OCS','LSEA','WHF','STBX','COE','HEET']
-    #stocks_to_check = ['ESTA','IJH','ISCB','IT','IWM','MANH','RSPT','SPMD','SPSC','SQSP']
+    #stocks_to_check = ['META','UNH','AVGO','PEP','CRM','ABT','CI','ICE','MITSY','WDAY','MCK','SQ','ABC','CNC','PDYPY','LEN','CSGP','VRSK','CABGY','PODD','AXON','WYNN','ETSY','RYAN','RDY','NE','NBIX','WMS','CLH','ALGM','BLD','CAE']
+    stocks_to_check = ['TKOMY','CNMD','VLVLY','DSGX','INST','WFG','BCH','AVID','DNNGY','SVNDY','BKNG','GLOB','ADUS','TTDKY','HOCPY','DECK','BIO','TTEC','DNZOY','KMTUY','KWR','HTHIY','SPSC','JHX','DCBO','CCSI','IX','PSN','SYIEY','ITOCY','EXPGY','FICO','STN','PDYPY','QTWO','SQ','PEN','DNLI','AER','NOW','BPOP','SYF','SMAR','DUOL','VMC','BRX','WMS','SUI','FSLR','EMR','CMG','NDSN','DVN','SAR','GPI','THC','WSC','HON','SPT','AVTR','CRH']
     stocks_to_buy = []
     count = 0
     for stock in stocks_to_check:
