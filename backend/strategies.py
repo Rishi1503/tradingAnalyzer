@@ -26,7 +26,7 @@ def check_moving_average(stock_data, period=7):
     if current_price > last_ma:
         return True
     else:
-        return f"{symbol}: Sell"
+        return False
 
 def check_bullish_pattern(stock_data, short_period=3, long_period=7):
     
@@ -42,7 +42,7 @@ def check_bullish_pattern(stock_data, short_period=3, long_period=7):
     if last_short_ma > last_long_ma:
         return True
     else:
-        return f"{symbol}: No bullish pattern detected"
+        return False
 
 def check_momentum(stock_data, period=7):
     
@@ -56,9 +56,9 @@ def check_momentum(stock_data, period=7):
     if last_roc > 0:
         return True
     elif last_roc < 0:
-        return f"{symbol}: Momentum indicates downward movement"
+        return False
     else:
-        return f"{symbol}: No significant momentum detected"
+        return False
 
 #dont use this too often!!! breakout strategy
 def should_buy_stock(symbol, lookback_period=20, breakout_threshold=0.02):
@@ -95,7 +95,7 @@ def check_on_balance_volume(stock_data):
     if current_obv > 0 and current_close > stock_data['Close'].mean():
         return True
     else:
-        return f"{symbol}: Do not buy the stock (OBV and price are not in agreement)"
+        return False
 
 #Accumulation/Distribution line 
 def check_adline(stock_data):
@@ -112,9 +112,9 @@ def check_adline(stock_data):
     if adline_value > 0:
         return True
     elif adline_value < 0:
-        return f"{symbol}: Sell the stock (A/D Line indicates selling pressure)"
+        return False
     else:
-        return f"{symbol}: Do not take any action (A/D Line is neutral)"
+        return False
 
 #dont rely too much on it
 def should_buy_stock_with_adx(symbol):
@@ -239,7 +239,7 @@ def check_vwap(stock_data):
     if current_price > current_vwap:
         return True
     else:
-        return f"{symbol}: Do not buy the stock (Price is below VWAP)"
+        return False
 
 def check_ema(stock_data, short_period=3, long_period=7):
     
@@ -255,7 +255,7 @@ def check_ema(stock_data, short_period=3, long_period=7):
     if current_ema_short > current_ema_long:
         return True
     else:
-        return f"{symbol}: Do not buy the stock (Short-term EMA is below Long-term EMA)"
+        return False
 
 def get_fibonacci_levels(high, low):
     # Calculate the Fibonacci retracement levels
@@ -376,7 +376,7 @@ def check_macd(stock_data):
 def check_all_stocks():
     #watchlist = [ESTA,]
     #stocks_to_check = ['ICE', 'MCK', 'ABC', 'CNC', 'RYAN', 'RDY', 'NE', 'ALGM', 'BLD']
-    stocks_to_check = ['BOX','DINO']
+    stocks_to_check = ['DBX','DINO']
     stocks_to_buy = []
     count = 0
     for stock in stocks_to_check:
