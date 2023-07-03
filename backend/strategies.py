@@ -376,7 +376,7 @@ def check_macd(stock_data):
 def check_all_stocks():
     #watchlist = [ESTA,]
     #stocks_to_check = ['ICE', 'MCK', 'ABC', 'CNC', 'RYAN', 'RDY', 'NE', 'ALGM', 'BLD']
-    stocks_to_check = ['DBX','DINO']
+    stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
     stocks_to_buy = []
     count = 0
     for stock in stocks_to_check:
@@ -421,6 +421,7 @@ def check_all_stocks():
         count = 0
 
     stocks_waitlist = []
+    print('Stage 1 Filtering Done')
     stocks_to_buy, stocks_waitlist = check_1_3_6_months(stocks_to_buy)
     print("Filtered stocks to buy: ", stocks_to_buy)
     print("Waitlisted stocks: ", stocks_waitlist)
