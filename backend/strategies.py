@@ -2,7 +2,7 @@ import yfinance as yf
 import numpy as np
 import pandas as pd
 import yaml
-
+from datapackage import Package
 from support_resistance import check_1_3_6_months
 import time
 import schedule
@@ -27,19 +27,59 @@ APCA_API_BASE_URL = env_list['env_variables']['APCA_API_BASE_URL']
 trading_client = TradingClient(env_list['env_variables']['API-KEY'], env_list['env_variables']['SECRET-KEY'], paper=True)
 account = trading_client.get_account()
 
-def check_moving_average(stock_data, period=7):
+package = Package('https://datahub.io/core/s-and-p-500-companies/datapackage.json')
+
+# Initialize an empty array to store the stock symbols
+stock_symbols = []
+
+# Iterate through the resources
+for resource in package.resources:
+    # Check if the resource is processed tabular data in CSV format
+    if resource.descriptor['datahub']['type'] == 'derived/csv':
+        # Read the processed tabular data
+        data = resource.read()
+
+        # Iterate through the data rows
+        for row in data:
+            # Get the stock symbol from the appropriate column (e.g., 'symbol')
+            stock_symbol = row[0]
+
+            # Append the stock symbol to the array
+            stock_symbols.append(stock_symbol)
+package = Package('https://datahub.io/core/nyse-other-listings/datapackage.json')
+print(len(stock_symbols))
+# Iterate through the resources
+for resource in package.resources:
+    # Check if the resource is processed tabular data in CSV format
+    if resource.descriptor['datahub']['type'] == 'derived/csv':
+        # Read the processed tabular data
+        data = resource.read()
+
+        # Iterate through the data rows
+        for row in data:
+            # Get the stock symbol from the appropriate column (e.g., 'symbol')
+            stock_symbol = row[0]
+
+            # Append the stock symbol to the array
+            stock_symbols.append(stock_symbol)
+print(len(stock_symbols))
+stock_symbols = list(set(stock_symbols))
+print(len(stock_symbols))
+def check_moving_average(stock_data, long_period=7, short_period=3):
     
     # Calculate the moving average
-    stock_data['MA'] = stock_data['Close'].rolling(window=period).mean()
+    stock_data['MA_7'] = stock_data['Close'].rolling(window=long_period).mean()
+    stock_data['MA_3'] = stock_data['Close'].rolling(window=short_period).mean()
     
     # Get the last closing price
     current_price = stock_data['Close'][-1]
     
     # Get the last moving average value
-    last_ma = stock_data['MA'][-1]
+    last_ma_7 = stock_data['MA_7'][-1]
+    last_ma_3 = stock_data['MA_3'][-1]
     
     # Determine if the stock should be bought or sold
-    if current_price > last_ma:
+    if current_price > last_ma_7 and current_price > last_ma_3:
         return True
     else:
         return False
@@ -389,53 +429,45 @@ def check_macd(stock_data):
     else:
         return False
 
-def check_all_stocks():
+def check_all_stocks(stocks_to_check):
     #watchlist = [ESTA,]
     #stocks_to_check = ['AAPL']
-    stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
+    #stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
     stocks_to_buy = []
     count = 0
     for stock in stocks_to_check:
-        stock_data = yf.download(stock)
-        # print(stock)
-        if(check_moving_average(stock_data) == True):
-            # print("average")
-            count = count +1
-        if(check_bullish_pattern(stock_data)  == True):
-            # print("bullish")
-            count = count +1
-        if(check_momentum(stock_data)):
-            # print("momentum")
-            count = count +1
-        if(check_on_balance_volume(stock_data)  == True):
-            # print("volume")
-            count = count +1
-        if(check_adline(stock_data)  == True):
-            # print("adline")
-            count = count +1
-        # if(check_rsi(stock_data)  == True):
-        #     # print("rsi")
-        #     count = count +1
-        if(check_vwap(stock_data)  == True):
-            # print("vwap")
-            count = count +1
-        if(check_ema(stock_data)  == True):
-            # print("ema")
-            count = count +1
-        if(check_atr(stock_data)  == True):
-            # print("atr")
-            count = count +1
-        if(check_zigzag(stock_data)  == True):
-            # print("zigzag")
-            count = count +1
-        if(check_macd(stock_data)  == True):
-            # print("macd")
-            count = count +1
-        # print(count)
-        if(count >= 9):
-            stocks_to_buy.append(stock)
-        count = 0
+        try:
+            stock_data = yf.download(stock)
+        
+            if check_moving_average(stock_data):
+                count += 1
+            if check_bullish_pattern(stock_data):
+                count += 1
+            if check_momentum(stock_data):
+                count += 1
+            if check_on_balance_volume(stock_data):
+                count += 1
+            if check_adline(stock_data):
+                count += 1
+        # if check_rsi(stock_data):
+        #     count += 1
+            if check_vwap(stock_data):
+                count += 1
+            if check_ema(stock_data):
+                count += 1
+            if check_atr(stock_data):
+                count += 1
+            if check_zigzag(stock_data):
+                count += 1
+            if check_macd(stock_data):
+                count += 1
 
+            if count >= 9:
+                stocks_to_buy.append(stock)
+            count = 0
+
+        except Exception as e:
+            print(f"Error occurred while processing stock '{stock}': {e}")
     stocks_waitlist = []
     positions = trading_client.get_all_positions()
     print('Stage 1 Filtering Done')
@@ -458,7 +490,18 @@ def sellstock(stock, quantity):
                     qty=quantity,
                     side=OrderSide.SELL,
                     trail_percent=1,
-                    time_in_force=TimeInForce.DAY
+                    time_in_force=TimeInForce.GTC
+                    )
+    # Market order
+    market_order = trading_client.submit_order(
+                order_data=market_order_data
+               )
+def sellstock_instant(stock, quantity):
+    market_order_data = MarketOrderRequest(
+                    symbol=stock,
+                    qty=quantity,
+                    side=OrderSide.SELL,
+                    time_in_force=TimeInForce.GTC
                     )
     # Market order
     market_order = trading_client.submit_order(
@@ -483,7 +526,7 @@ def set_sell_orders(tif):
     positions = trading_client.get_all_positions()
     for position in positions:
         print(position.symbol + " " + position.market_value)
-        sellstock(position.symbol, position.qty, tif)
+        sellstock(position.symbol, position.qty)
 
 def check_positions():
     #print(trading_client.get_all_positions())
@@ -493,7 +536,7 @@ def check_positions():
         print(position.symbol + " " + position.market_value)
         if ((float(position.market_value)/float(position.cost_basis)) > 1.01):
             print("profitted")
-            sellstock(position.symbol,position.qty)
+            sellstock_instant(position.symbol,position.qty)
         if ((float(position.market_value)/float(position.cost_basis)) < 0.99):
             print("loss")
             sellstock(position.symbol, position.qty)
@@ -505,7 +548,7 @@ def check_positions():
 schedule.every(2).hours.do(check_all_stocks)
 schedule.every(5).minutes.do(check_positions)
 
-check_all_stocks()
+check_all_stocks(stock_symbols)
 
 # Run the scheduler continuously
 while True:
@@ -513,3 +556,6 @@ while True:
     # time.sleep(1)
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # print(current_time)
+
+
+['ALB', 'ARE', 'AMP', 'APTV', 'CHRW', 'CF', 'CHTR', 'CTSH', 'DVA', 'DPZ', 'FISV', 'FLT', 'GM', 'GPN', 'HLT', 'HWM', 'MAR', 'MET', 'MSCI', 'NXPI', 'PAYC', 'PM', 'PSX', 'PFG', 'PRU', 'SBAC', 'TEL', 'TDY', 'HIG']
