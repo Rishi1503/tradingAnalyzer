@@ -1,5 +1,5 @@
 
 env_variables:
-  APCA_API_BASE_URL: "https://paper-api.alpaca.markets"
-  API-KEY: "12345"
-  SECRET-KEY: "12345"
+  APCA_API_BASE_URL: 'https://paper-api.alpaca.markets'
+  API-KEY: '123456789'
+  SECRET-KEY: '123456789'

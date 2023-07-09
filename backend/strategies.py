@@ -18,15 +18,11 @@ import datetime as dt
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.model_selection import RandomizedSearchCV
 
-with open(r'app.yaml') as file:
-    # The FullLoader parameter handles the conversion from YAML
-    # scalar values to Python the dictionary format
+with open('app.yaml') as file:
     env_list = yaml.load(file, Loader=yaml.FullLoader)
 
-print(env_list)
-APCA_API_BASE_URL = env_list.get('APCA_API_BASE_URL')
-
-trading_client = TradingClient(env_list.get('API-KEY'), env_list.get('SECRET-KEY'), paper=True)
+APCA_API_BASE_URL = env_list['env_variables']['APCA_API_BASE_URL']
+trading_client = TradingClient(env_list['env_variables']['API-KEY'], env_list['env_variables']['SECRET-KEY'], paper=True)
 account = trading_client.get_account()
 
 def check_moving_average(symbol, period=7):
