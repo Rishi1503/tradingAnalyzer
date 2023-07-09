@@ -1,6 +1,8 @@
 import yfinance as yf
 import numpy as np
 import pandas as pd
+import yaml
+
 from support_resistance import check_1_3_6_months
 import time
 import schedule
@@ -17,8 +19,12 @@ import datetime as dt
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.model_selection import RandomizedSearchCV
 
-APCA_API_BASE_URL="https://paper-api.alpaca.markets"
-trading_client = TradingClient('PKEG1XUPZTLWMHDKRJ6V', '3iWOd82VeJY4FylUhARkka7wNcoh1I7NkvXmO9W5', paper=True)
+
+with open('app.yaml') as file:
+    env_list = yaml.load(file, Loader=yaml.FullLoader)
+
+APCA_API_BASE_URL = env_list['env_variables']['APCA_API_BASE_URL']
+trading_client = TradingClient(env_list['env_variables']['API-KEY'], env_list['env_variables']['SECRET-KEY'], paper=True)
 account = trading_client.get_account()
 
 def check_moving_average(stock_data, period=7):
