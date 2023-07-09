@@ -1,8 +1,15 @@
 import yfinance as yf
 import numpy as np
 import pandas as pd
+
 from support_resistance import check_1_3_6_months
-# import datetime as dt
+
+import time
+import schedule
+from alpaca.trading.client import TradingClient
+from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.enums import OrderSide, TimeInForce
+import datetime as dt
 # from numpy import arange
 # from pandas import read_csv
 # from sklearn import metrics
@@ -11,7 +18,14 @@ from support_resistance import check_1_3_6_months
 # from sklearn.preprocessing import StandardScaler
 # from sklearn.model_selection import RandomizedSearchCV
 
-def check_moving_average(stock_data, period=7):
+APCA_API_BASE_URL="https://paper-api.alpaca.markets"
+trading_client = TradingClient('PKZFM1LQJ01LQW92X8YE', 'sqtLQutzG1Zv3uJb4DNYaK0PSWpqBOPTbtmsK0Fe', paper=True)
+account = trading_client.get_account()
+
+def check_moving_average(symbol, period=7):
+    # Get the historical data for the stock
+    stock_data = yf.download(symbol)
+
     
     # Calculate the moving average
     stock_data['MA'] = stock_data['Close'].rolling(window=period).mean()
@@ -419,6 +433,10 @@ def check_all_stocks():
         if(count >= 9):
             stocks_to_buy.append(stock)
         count = 0
+    
+    for stock in stocks_to_buy:
+       buystock(stock)
+    #set_sell_orders(TimeInForce.DAY)
 
     stocks_waitlist = []
     print('Stage 1 Filtering Done')
@@ -427,5 +445,61 @@ def check_all_stocks():
     print("Waitlisted stocks: ", stocks_waitlist)
     return stocks_to_buy
 
+def sellstock(stock, quantity, tif):
+    market_order_data = MarketOrderRequest(
+                    symbol=stock,
+                    type="trailing_stop",
+                    qty=quantity,
+                    side=OrderSide.SELL,
+                    trail_percent=1,
+                    time_in_force=tif
+                    )
+    # Market order
+    market_order = trading_client.submit_order(
+                order_data=market_order_data
+               )
+    
+def buystock(stock):
+    market_order_data = MarketOrderRequest(
+                    symbol=stock,
+                    notional=1000,
+                    side=OrderSide.BUY,
+                    time_in_force=TimeInForce.DAY
+                    )
+    # Market order
+    market_order = trading_client.submit_order(
+                order_data=market_order_data
+               )
+    print(trading_client.get_orders)
 
-check_all_stocks()
+def set_sell_orders(tif):
+    #print(trading_client.get_all_positions())
+    positions = trading_client.get_all_positions()
+    for position in positions:
+        print(position.symbol + " " + position.market_value)
+        sellstock(position.symbol, position.qty, tif)
+
+def check_positions():
+    #print(trading_client.get_all_positions())
+    positions = trading_client.get_all_positions()
+    print("========================")
+    for position in positions:
+        print(position.symbol + " " + position.market_value)
+        if ((float(position.market_value)/float(position.cost_basis)) > 1.01):
+            print("profitted")
+    print("========================")
+
+
+
+# Schedule the function to run every hour
+schedule.every().second.do(check_positions)
+
+# Run the scheduler continuously
+while True:
+    schedule.run_pending()
+    time.sleep(1)
+    current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    print(current_time)
+    
+   
+    
