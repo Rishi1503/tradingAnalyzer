@@ -1,15 +1,14 @@
 import yfinance as yf
 import numpy as np
 import pandas as pd
-
 from support_resistance import check_1_3_6_months
-
 import time
 import schedule
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 import datetime as dt
+# import datetime as dt
 # from numpy import arange
 # from pandas import read_csv
 # from sklearn import metrics
@@ -19,13 +18,10 @@ import datetime as dt
 # from sklearn.model_selection import RandomizedSearchCV
 
 APCA_API_BASE_URL="https://paper-api.alpaca.markets"
-trading_client = TradingClient('PKZFM1LQJ01LQW92X8YE', 'sqtLQutzG1Zv3uJb4DNYaK0PSWpqBOPTbtmsK0Fe', paper=True)
+trading_client = TradingClient('PKEG1XUPZTLWMHDKRJ6V', '3iWOd82VeJY4FylUhARkka7wNcoh1I7NkvXmO9W5', paper=True)
 account = trading_client.get_account()
 
-def check_moving_average(symbol, period=7):
-    # Get the historical data for the stock
-    stock_data = yf.download(symbol)
-
+def check_moving_average(stock_data, period=7):
     
     # Calculate the moving average
     stock_data['MA'] = stock_data['Close'].rolling(window=period).mean()
@@ -185,7 +181,7 @@ def is_stock_worth_buying_with_aroon(symbol, period=4):
         return f"{symbol}: Do not buy the stock (Aroon indicator does not suggest buying opportunity)"
 
 #don't use yet
-def check_rsi(symbol, period=14, oversold_threshold=40, overbought_threshold=60):
+def check_rsi(stock_data, period=14, oversold_threshold=40, overbought_threshold=60):
 
     # change = stock_data["Close"].diff()
     
@@ -209,7 +205,7 @@ def check_rsi(symbol, period=14, oversold_threshold=40, overbought_threshold=60)
     # Take a look at the 20 oldest datapoints
     
     # Get historical data for the stock
-    stock_data = yf.download(symbol)
+    # stock_data = yf.download(symbol)
     
     # Calculate price change and store as a new column
     stock_data['Price Change'] = stock_data['Close'].diff()
@@ -233,11 +229,11 @@ def check_rsi(symbol, period=14, oversold_threshold=40, overbought_threshold=60)
     print(current_rsi)
     # Check if the RSI value suggests buying the stock
     if current_rsi > overbought_threshold:
-        return f"{symbol}: Do not buy the stock (RSI is overbought)"
+        return False
     elif current_rsi < oversold_threshold:
         return True
     else:
-        return f"{symbol}: Do not take any action (RSI does not suggest clear buying opportunity)"
+        return False
 
 def check_vwap(stock_data):
     
@@ -389,7 +385,7 @@ def check_macd(stock_data):
 
 def check_all_stocks():
     #watchlist = [ESTA,]
-    #stocks_to_check = ['ICE', 'MCK', 'ABC', 'CNC', 'RYAN', 'RDY', 'NE', 'ALGM', 'BLD']
+    #stocks_to_check = ['AAPL']
     stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
     stocks_to_buy = []
     count = 0
@@ -433,26 +429,30 @@ def check_all_stocks():
         if(count >= 9):
             stocks_to_buy.append(stock)
         count = 0
-    
-    for stock in stocks_to_buy:
-       buystock(stock)
-    #set_sell_orders(TimeInForce.DAY)
 
     stocks_waitlist = []
+    positions = trading_client.get_all_positions()
     print('Stage 1 Filtering Done')
     stocks_to_buy, stocks_waitlist = check_1_3_6_months(stocks_to_buy)
-    print("Filtered stocks to buy: ", stocks_to_buy)
     print("Waitlisted stocks: ", stocks_waitlist)
+    for position in positions:
+        if stocks_to_buy.__contains__(position.symbol):
+            stocks_to_buy.remove(position.symbol)
+    print('Stage 2 Filtering Done')
+    for stock in stocks_to_buy:
+        buystock(stock)
+    print("Filtered stocks to buy: ", stocks_to_buy)
     return stocks_to_buy
 
-def sellstock(stock, quantity, tif):
+
+def sellstock(stock, quantity):
     market_order_data = MarketOrderRequest(
                     symbol=stock,
                     type="trailing_stop",
                     qty=quantity,
                     side=OrderSide.SELL,
                     trail_percent=1,
-                    time_in_force=tif
+                    time_in_force=TimeInForce.DAY
                     )
     # Market order
     market_order = trading_client.submit_order(
@@ -487,19 +487,23 @@ def check_positions():
         print(position.symbol + " " + position.market_value)
         if ((float(position.market_value)/float(position.cost_basis)) > 1.01):
             print("profitted")
+            sellstock(position.symbol,position.qty)
+        if ((float(position.market_value)/float(position.cost_basis)) < 0.99):
+            print("loss")
+            sellstock(position.symbol, position.qty)
     print("========================")
 
 
 
 # Schedule the function to run every hour
-schedule.every().second.do(check_positions)
+schedule.every(2).hours.do(check_all_stocks)
+schedule.every(5).minutes.do(check_positions)
+
+check_all_stocks()
 
 # Run the scheduler continuously
 while True:
     schedule.run_pending()
-    time.sleep(1)
+    # time.sleep(1)
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-    print(current_time)
-    
-   
-    
+    # print(current_time)
