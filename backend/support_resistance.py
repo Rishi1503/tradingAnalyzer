@@ -98,7 +98,7 @@ def get_support_resistance_levels(ticker_symbol, start_date, end_date):
 def compare_price_levels(resistance_levels, support_levels, current_price, mean):
     should_buy = ''
     for level in resistance_levels:
-        if abs(current_price - level[1]) < mean:
+        if abs(current_price - level[1]) < mean * 0.02:
             # print("Current price is near a resistance level:", level[1])
             should_buy = 'No'
             return should_buy
