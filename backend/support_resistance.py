@@ -45,54 +45,56 @@ def distance_from_mean(level, mean, levels):
 # plot_levels()
 
 def get_support_resistance_levels(ticker_symbol, start_date, end_date):
-  # Obtaining historical stock pricing data
-    ticker = yf.Ticker(ticker_symbol)
+    try:
+        # Obtaining historical stock pricing data
+        ticker = yf.Ticker(ticker_symbol)
 
-    df = ticker.history(interval='1d', start=start_date, end=end_date)
+        df = ticker.history(interval='1d', start=start_date, end=end_date)
 
-    df['Date'] = pd.to_datetime(df.index)
-    df['Date'] = df['Date'].apply(mpl_dates.date2num)
+        df['Date'] = pd.to_datetime(df.index)
+        df['Date'] = df['Date'].apply(mpl_dates.date2num)
 
-    df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
+        df = df.loc[:,['Date', 'Open', 'High', 'Low', 'Close']]
 
-    # Clean noise in data by discarding a level if it is near another
-    # (i.e. if distance to the next level is less than the average candle size for any given day - this will give a rough estimate on volatility)
-    mean = np.mean(df['High'] - df['Low'])
+        # Clean noise in data by discarding a level if it is near another
+        # (i.e. if distance to the next level is less than the average candle size for any given day - this will give a rough estimate on volatility)
+        mean = np.mean(df['High'] - df['Low'])
 
-    # Optimizing the analysis by adjusting the data and eliminating the noise from volatility that is causing multiple levels to show/overlapp
-    levels = []
-    level_types = []
-    for i in range(2, df.shape[0] - 2):
+        # Optimizing the analysis by adjusting the data and eliminating the noise from volatility that is causing multiple levels to show/overlapp
+        levels = []
+        level_types = []
+        for i in range(2, df.shape[0] - 2):
 
-        if is_Suppport_Level(df, i):
-            level = df['Low'][i].round(2)
+            if is_Suppport_Level(df, i):
+                level = df['Low'][i].round(2)
 
-            if distance_from_mean(level, mean, levels):
-                levels.append((i, level))
-                level_types.append('Support')
+                if distance_from_mean(level, mean, levels):
+                    levels.append((i, level))
+                    level_types.append('Support')
 
-        elif is_Resistance_Level(df, i):
-            level = df['High'][i].round(2)
+            elif is_Resistance_Level(df, i):
+                level = df['High'][i].round(2)
 
-            if distance_from_mean(level, mean, levels):
-                levels.append((i, level))
-                level_types.append('Resistance')
+                if distance_from_mean(level, mean, levels):
+                    levels.append((i, level))
+                    level_types.append('Resistance')
 
-    # print(levels)
-    # plot_levels(df, ticker_symbol, levels, level_types)
-    # plt.show()
+        # print(levels)
+        # plot_levels(df, ticker_symbol, levels, level_types)
+        # plt.show()
 
-    resistance_levels = []
-    support_levels = []
+        resistance_levels = []
+        support_levels = []
 
-    for i in range (len(levels)):
-        if level_types[i] == 'Resistance':
-            resistance_levels.append(levels[i])
-        else:
-            support_levels.append(levels[i])
-
-    # print("Resistance: ", resistance_levels)
-    # print("Support: ", support_levels)
+        for i in range (len(levels)):
+            if level_types[i] == 'Resistance':
+                resistance_levels.append(levels[i])
+            else:
+                support_levels.append(levels[i])
+    except Exception as e:
+            print(f"Error occurred while processing stock '{ticker_symbol}': {e}")
+        # print("Resistance: ", resistance_levels)
+        # print("Support: ", support_levels)
     return compare_price_levels(resistance_levels, support_levels, df['Close'][-1], mean)
 
 def compare_price_levels(resistance_levels, support_levels, current_price, mean):
@@ -118,14 +120,18 @@ def check_1_3_6_months(ticker_symbols):
         three_month = get_support_resistance_levels(symbol, '2023-04-01', '2023-07-10')
         six_month = get_support_resistance_levels(symbol, '2023-01-01', '2023-07-10')
         # print(one_month, ' ', three_month, ' ', six_month)
-        if one_month == 'Yes':
-            if three_month == 'Yes' or six_month == 'Yes':
-                stocks_to_buy.append(symbol)
-            else:
-                stocks_waitlist.append(symbol)
-        elif one_month == 'Maybe' and (three_month == 'Yes' and six_month == 'Yes'):
-            stocks_to_buy.append(symbol)
-        elif one_month == 'Maybe' and three_month == 'Maybe' and six_month == 'Maybe':
+        # if one_month == 'Yes':
+        #     if three_month == 'Yes' or six_month == 'Yes':
+        #         stocks_to_buy.append(symbol)
+        #     else:
+        #         stocks_waitlist.append(symbol)
+        # elif one_month == 'Maybe' and (three_month == 'Yes' and six_month == 'Yes'):
+        #     stocks_to_buy.append(symbol)
+        # elif one_month == 'Maybe' and three_month == 'Maybe' and six_month == 'Maybe':
+        #     stocks_to_buy.append(symbol)
+        # else:
+        #     stocks_waitlist.append(symbol)
+        if one_month == 'Yes' and three_month == 'Yes' and six_month == 'Yes':
             stocks_to_buy.append(symbol)
         else:
             stocks_waitlist.append(symbol)
@@ -139,7 +145,7 @@ def check_1_3_6_months(ticker_symbols):
     # get_support_resistance_levels(ticker_symbol, '2023-01-01', '2023-07-10')
 
 
-# check_1_3_6_months(ticker_symbol)
+# print(check_1_3_6_months(['GWRE']))
 # ticker_symbol = 'PWR'
 
 #prioritize 1 month, then if either 3 or 6 month say yes then buy
