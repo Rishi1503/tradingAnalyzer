@@ -8,6 +8,7 @@ import time
 import schedule
 from alpaca.trading.client import TradingClient
 from alpaca.trading.requests import MarketOrderRequest
+from alpaca.trading.requests import GetAssetsRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 import datetime as dt
 # import datetime as dt
@@ -27,44 +28,66 @@ APCA_API_BASE_URL = env_list['env_variables']['APCA_API_BASE_URL']
 trading_client = TradingClient(env_list['env_variables']['API-KEY'], env_list['env_variables']['SECRET-KEY'], paper=True)
 account = trading_client.get_account()
 
-package = Package('https://datahub.io/core/s-and-p-500-companies/datapackage.json')
+def get_stock_listings():
 
-# Initialize an empty array to store the stock symbols
-stock_symbols = []
+    package = Package('https://datahub.io/core/s-and-p-500-companies/datapackage.json')
 
-# Iterate through the resources
-for resource in package.resources:
-    # Check if the resource is processed tabular data in CSV format
-    if resource.descriptor['datahub']['type'] == 'derived/csv':
-        # Read the processed tabular data
-        data = resource.read()
+    # Initialize an empty array to store the stock symbols
+    stock_symbols = []
+    # Iterate through the resources
+    for resource in package.resources:
+        # Check if the resource is processed tabular data in CSV format
+        if resource.descriptor['datahub']['type'] == 'derived/csv':
+            # Read the processed tabular data
+            data = resource.read()
 
-        # Iterate through the data rows
-        for row in data:
-            # Get the stock symbol from the appropriate column (e.g., 'symbol')
-            stock_symbol = row[0]
+            # Iterate through the data rows
+            for row in data:
+                # Get the stock symbol from the appropriate column (e.g., 'symbol')
+                stock_symbol = row[0]
 
-            # Append the stock symbol to the array
-            stock_symbols.append(stock_symbol)
-package = Package('https://datahub.io/core/nyse-other-listings/datapackage.json')
-print(len(stock_symbols))
-# Iterate through the resources
-for resource in package.resources:
-    # Check if the resource is processed tabular data in CSV format
-    if resource.descriptor['datahub']['type'] == 'derived/csv':
-        # Read the processed tabular data
-        data = resource.read()
+                # Append the stock symbol to the array
+                stock_symbols.append(stock_symbol)
+    package = Package('https://datahub.io/core/nyse-other-listings/datapackage.json')
+    print(len(stock_symbols))
+    # Iterate through the resources
+    for resource in package.resources:
+        # Check if the resource is processed tabular data in CSV format
+        if resource.descriptor['datahub']['type'] == 'derived/csv':
+            # Read the processed tabular data
+            data = resource.read()
 
-        # Iterate through the data rows
-        for row in data:
-            # Get the stock symbol from the appropriate column (e.g., 'symbol')
-            stock_symbol = row[0]
+            # Iterate through the data rows
+            for row in data:
+                # Get the stock symbol from the appropriate column (e.g., 'symbol')
+                stock_symbol = row[0]
 
-            # Append the stock symbol to the array
-            stock_symbols.append(stock_symbol)
-print(len(stock_symbols))
-stock_symbols = list(set(stock_symbols))
-print(len(stock_symbols))
+                # Append the stock symbol to the array
+                stock_symbols.append(stock_symbol)
+    print(len(stock_symbols))
+    stock_symbols = list(set(stock_symbols))
+    return stock_screener(stock_symbols)
+
+def stock_screener(stock_symbols):
+    filtered_stocks = []
+
+    for symbol in stock_symbols:
+        try:
+            data = yf.download(symbol, period='1mo', interval='1wk')
+
+            # Check share price
+            current_price = data['Close'][-1]
+            # Check weekly percentage change
+            weekly_pct_change = (data['Close'][-1] - data['Close'][-2]) / data['Close'][-2] * 100
+
+            if current_price > 20 and (weekly_pct_change > 2 or weekly_pct_change < 5):
+                filtered_stocks.append(symbol)  # Add the stock to the filtered list
+        except Exception as e:
+            print({e})
+
+    return filtered_stocks
+
+
 def check_moving_average(stock_data, long_period=7, short_period=3):
     
     # Calculate the moving average
@@ -438,7 +461,8 @@ def check_all_stocks(stocks_to_check):
     for stock in stocks_to_check:
         try:
             stock_data = yf.download(stock)
-        
+            count = 0
+
             if check_moving_average(stock_data):
                 count += 1
             if check_bullish_pattern(stock_data):
@@ -464,7 +488,6 @@ def check_all_stocks(stocks_to_check):
 
             if count >= 9:
                 stocks_to_buy.append(stock)
-            count = 0
 
         except Exception as e:
             print(f"Error occurred while processing stock '{stock}': {e}")
@@ -477,9 +500,13 @@ def check_all_stocks(stocks_to_check):
         if stocks_to_buy.__contains__(position.symbol):
             stocks_to_buy.remove(position.symbol)
     print('Stage 2 Filtering Done')
+    print("Filtered stocks to buy: ", stocks_to_buy)            
     for stock in stocks_to_buy:
-        buystock(stock)
-    print("Filtered stocks to buy: ", stocks_to_buy)
+        try:
+            if trading_client.get_asset(stock).tradable:
+                buystock(stock)
+        except Exception as e:
+            print(f"Error occurred while purchasing stock '{stock}': {e}")
     return stocks_to_buy
 
 
@@ -490,7 +517,7 @@ def sellstock(stock, quantity):
                     qty=quantity,
                     side=OrderSide.SELL,
                     trail_percent=1,
-                    time_in_force=TimeInForce.GTC
+                    time_in_force=TimeInForce.DAY
                     )
     # Market order
     market_order = trading_client.submit_order(
@@ -501,7 +528,7 @@ def sellstock_instant(stock, quantity):
                     symbol=stock,
                     qty=quantity,
                     side=OrderSide.SELL,
-                    time_in_force=TimeInForce.GTC
+                    time_in_force=TimeInForce.DAY
                     )
     # Market order
     market_order = trading_client.submit_order(
@@ -542,20 +569,15 @@ def check_positions():
             sellstock(position.symbol, position.qty)
     print("========================")
 
-
+stock_symbols = get_stock_listings()
 
 # Schedule the function to run every hour
-schedule.every(2).hours.do(check_all_stocks)
-schedule.every(5).minutes.do(check_positions)
-
+schedule.every(2).hours.do(check_all_stocks,stock_symbols)
+schedule.every(2).minutes.do(check_positions)
 check_all_stocks(stock_symbols)
-
 # Run the scheduler continuously
 while True:
     schedule.run_pending()
     # time.sleep(1)
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # print(current_time)
-
-
-['ALB', 'ARE', 'AMP', 'APTV', 'CHRW', 'CF', 'CHTR', 'CTSH', 'DVA', 'DPZ', 'FISV', 'FLT', 'GM', 'GPN', 'HLT', 'HWM', 'MAR', 'MET', 'MSCI', 'NXPI', 'PAYC', 'PM', 'PSX', 'PFG', 'PRU', 'SBAC', 'TEL', 'TDY', 'HIG']
