@@ -116,9 +116,12 @@ def check_1_3_6_months(ticker_symbols):
     stocks_waitlist = []
     stocks_to_buy = []
     for symbol in ticker_symbols:
-        one_month = get_support_resistance_levels(symbol, '2023-06-01', '2023-07-10')
-        three_month = get_support_resistance_levels(symbol, '2023-04-01', '2023-07-10')
-        six_month = get_support_resistance_levels(symbol, '2023-01-01', '2023-07-10')
+        try:
+            one_month = get_support_resistance_levels(symbol, '2023-07-01', '2023-08-10')
+            three_month = get_support_resistance_levels(symbol, '2023-05-01', '2023-08-10')
+            six_month = get_support_resistance_levels(symbol, '2023-02-01', '2023-08-10')
+        except Exception as e:
+            print(f"Error occurred while processing stock: {e}")
         # print(one_month, ' ', three_month, ' ', six_month)
         # if one_month == 'Yes':
         #     if three_month == 'Yes' or six_month == 'Yes':
@@ -132,6 +135,8 @@ def check_1_3_6_months(ticker_symbols):
         # else:
         #     stocks_waitlist.append(symbol)
         if one_month == 'Yes' and three_month == 'Yes' and six_month == 'Yes':
+            stocks_to_buy.append(symbol)
+        elif one_month == 'Maybe' and three_month == 'Maybe' and six_month == 'Maybe':
             stocks_to_buy.append(symbol)
         else:
             stocks_waitlist.append(symbol)

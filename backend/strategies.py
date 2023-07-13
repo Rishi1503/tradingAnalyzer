@@ -11,15 +11,7 @@ from alpaca.trading.requests import MarketOrderRequest
 from alpaca.trading.requests import GetAssetsRequest
 from alpaca.trading.enums import OrderSide, TimeInForce
 import datetime as dt
-# import datetime as dt
-# from numpy import arange
-# from pandas import read_csv
-# from sklearn import metrics
-# from sklearn.model_selection import train_test_split
-# from sklearn.ensemble import RandomForestRegressor
-# from sklearn.preprocessing import StandardScaler
-# from sklearn.model_selection import RandomizedSearchCV
-
+import csv
 
 with open('app.yaml') as file:
     env_list = yaml.load(file, Loader=yaml.FullLoader)
@@ -66,11 +58,12 @@ def get_stock_listings():
                 stock_symbols.append(stock_symbol)
     print(len(stock_symbols))
     stock_symbols = list(set(stock_symbols))
+    print(len(stock_symbols))
     return stock_screener(stock_symbols)
 
 def stock_screener(stock_symbols):
     filtered_stocks = []
-
+    output_file = 'filtered_stocks.csv'  # Specify the output file path
     for symbol in stock_symbols:
         try:
             data = yf.download(symbol, period='1mo', interval='1wk')
@@ -84,7 +77,13 @@ def stock_screener(stock_symbols):
                 filtered_stocks.append(symbol)  # Add the stock to the filtered list
         except Exception as e:
             print({e})
-
+    # Write filtered stocks to a file
+    with open(output_file, 'w', newline='') as file:
+        writer = csv.writer(file)
+        writer.writerow(['Symbol'])  # Write the header
+        for stock in filtered_stocks:
+            writer.writerow([stock])  # Write each filtered stock symbol
+    print("Stock screener done: ", len(filtered_stocks))
     return filtered_stocks
 
 
@@ -452,12 +451,23 @@ def check_macd(stock_data):
     else:
         return False
 
-def check_all_stocks(stocks_to_check):
-    #watchlist = [ESTA,]
-    #stocks_to_check = ['AAPL']
-    #stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
+# def check_all_stocks(stocks_to_check):
+def check_all_stocks(csv_file):
+    # stocks_to_check = ['GS','WH','JNPR','WDC','FI','UFPI','BLCO','AMN','MA','CCK','TXT','HOMB','CI','RWEOY','PRCT','HUBS','TOL','ARES','CCJ','MTZ','DQ','AXTA','INMD','VNOM','ITGR','COHU','KMTUY','KWR','HTHIY','FTV','V','ACGL','GOOG','DBX','AMT','MAURY','KBR','IAC','JLL','CVS','AVY','ETN','FUTU','SLB','SPSC','CEQP','JHX','BKR','WTFC','JCI','SPB','SPOT','DCBO','DINO','TTWO','UBS','LOW','TJX','BR','BSY','ABM','NVDA','SAFE','LEN','IMCR','BRBR','ZI','DOCS','BYD','CPRI','PDCE','CHRD','ROP','SHW','IONS','MIELY','APD','MOH','SVNDY','INSW','KNTK','DOV','WDS','BKNG','WDS','THRM','STAG','QCOM','GLOB','APO','SSB','PEAK','ADI','LIVN','PBA','HES','PNC','HMC','AKZOY','CORT','EDR','RNG','KEX','VTR','COLD','PCTY','PD','DRI','AZEK','INSM','IRM','SMPL','EQT','TEAM','GWRE','CIGI','ULTA','VRDN','EFX','KNX','STE','CNQ','BOX','PWR','MLNK','ANET','PB','MKL','EOG','MS','RRC','CAR','EE','DECK','BERY','BYDDY','BIO','NVEE','CIEN','NVT','DUOL','VMC','BRX','DUI','FSLR','MIDD','EMR','CMG','DVN','SAR','GPI','THC','ASH','HON','SPT','SYIEY','CCRN','TENB','AVTR','POOL','SPGI','CCI','ICE','DEO','GXO','CDRE','AL','FDX','KB','TNL','COST','PCOR','IR','COP','BANR','OFC','COOP','PEN','FITB','DSGX','DNLI','BAM','FSS','ESAB','OTEX','PRVA','NOG','CFIGY','SGRY','NOW','EQIX','EL','WFRD','BPOP','ONEW','BP','MLM','RY','EHC','OEC','PLD','GNTX','ABC','ADRNY','DEN','NVO','MODG','BBWI','MKSI','PXD','HEINY','DRVN','IQV','CW','CBT','BCH','TD','LECO','JBHT','GIB','MSI','NCR','SNPS','CPRT','SNDR','LPLA','HESM','CADE','PRLB','DDOG','RRX','ENTA','CWST','TECK','RYAN','WAL','BAP','TMUS','AAPL','PFSI','AIAGY','EQH','EGLE','CRWD','PBH','TS']
+    # stocks_to_buy = []
+    # count = 0
+    stocks_to_check = []
+
+    # Read stock symbols from the CSV file
+    with open(csv_file, 'r') as file:
+        reader = csv.reader(file)
+        next(reader)  # Skip the header row
+        for row in reader:
+            stocks_to_check.append(row[0])
+
     stocks_to_buy = []
     count = 0
+
     for stock in stocks_to_check:
         try:
             stock_data = yf.download(stock)
@@ -495,12 +505,13 @@ def check_all_stocks(stocks_to_check):
     positions = trading_client.get_all_positions()
     print('Stage 1 Filtering Done')
     stocks_to_buy, stocks_waitlist = check_1_3_6_months(stocks_to_buy)
-    print("Waitlisted stocks: ", stocks_waitlist)
+    # print("Waitlisted stocks: ", stocks_waitlist)
     for position in positions:
         if stocks_to_buy.__contains__(position.symbol):
             stocks_to_buy.remove(position.symbol)
     print('Stage 2 Filtering Done')
-    print("Filtered stocks to buy: ", stocks_to_buy)            
+    # print("Filtered stocks to buy: ", stocks_to_buy)    
+    print("num of stocks to buy: ", len(stocks_to_buy))        
     for stock in stocks_to_buy:
         try:
             if trading_client.get_asset(stock).tradable:
@@ -538,7 +549,7 @@ def sellstock_instant(stock, quantity):
 def buystock(stock):
     market_order_data = MarketOrderRequest(
                     symbol=stock,
-                    notional=1000,
+                    notional=500,
                     side=OrderSide.BUY,
                     time_in_force=TimeInForce.DAY
                     )
@@ -557,27 +568,44 @@ def set_sell_orders(tif):
 
 def check_positions():
     #print(trading_client.get_all_positions())
+    output_file_positive = 'trade_history_positive.csv'
+    output_file_negative = 'trade_history_negative.csv'
     positions = trading_client.get_all_positions()
     print("========================")
     for position in positions:
         print(position.symbol + " " + position.market_value)
         if ((float(position.market_value)/float(position.cost_basis)) > 1.01):
             print("profitted")
+            profit_loss = ((float(position.market_value)/float(position.cost_basis)) - 1) * 100
             sellstock_instant(position.symbol,position.qty)
+            with open(output_file_positive, 'a') as file:
+                writer = csv.writer(file)
+                writer.writerow([1])
+                file.close()
         if ((float(position.market_value)/float(position.cost_basis)) < 0.99):
             print("loss")
-            sellstock(position.symbol, position.qty)
+            profit_loss = ((float(position.market_value)/float(position.cost_basis)) - 1) * 100
+            sellstock_instant(position.symbol, position.qty)
+            with open(output_file_negative, 'a') as file:
+                writer = csv.writer(file)
+                writer.writerow([1])
+                file.close()
     print("========================")
 
-stock_symbols = get_stock_listings()
-
-# Schedule the function to run every hour
-schedule.every(2).hours.do(check_all_stocks,stock_symbols)
+# stock_symbols = get_stock_listings()
+#Every night filter stocks
+# get_stock_listings()
 schedule.every(2).minutes.do(check_positions)
-check_all_stocks(stock_symbols)
-# Run the scheduler continuously
+schedule.every().day.at("06:00", "America/New_York").do(get_stock_listings)
+schedule.every().day.at("08:20", "America/New_York").do(check_all_stocks,'filtered_stocks.csv')
+schedule.every().day.at("12:00", "America/New_York").do(check_all_stocks,'filtered_stocks.csv')
+# schedule.every(2).hours.do(check_all_stocks,'filtered_stocks.csv')
+#Every morning run the filtered stocks through algorithm
+# check_all_stocks('filtered_stocks.csv')
 while True:
     schedule.run_pending()
     # time.sleep(1)
     current_time = dt.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
     # print(current_time)
+
+#203
