@@ -594,7 +594,7 @@ def check_positions():
 
 # stock_symbols = get_stock_listings()
 #Every night filter stocks
-# get_stock_listings()
+get_stock_listings()
 schedule.every(2).minutes.do(check_positions)
 schedule.every().day.at("06:00", "America/New_York").do(get_stock_listings)
 schedule.every().day.at("08:20", "America/New_York").do(check_all_stocks,'filtered_stocks.csv')
