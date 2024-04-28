@@ -70,3 +70,9 @@ errors = abs(predict - y_test)
 mape = 100 * (errors / y_test)
 accuracy = 100 - np.mean(mape)
 print('Accuracy:', round(accuracy, 2), '%.') 
+
+
+20 13 * * * python3 strategies.py
+0 12 * * * python3 stock_screener.py
+*/2 13-20 * * * python3 buy_sell.py
+* * * * * python3 stock_screener.py

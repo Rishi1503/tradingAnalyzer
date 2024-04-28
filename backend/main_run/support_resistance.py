@@ -100,13 +100,16 @@ def get_support_resistance_levels(ticker_symbol, start_date, end_date):
 def compare_price_levels(resistance_levels, support_levels, current_price, mean):
     should_buy = ''
     for level in resistance_levels:
-        if abs(current_price - level[1]) < mean * 0.02:
+        # if abs(current_price - level[1]) < mean * 0.02:
+        if abs(current_price - level[1])/current_price < 0.015:
+            print(level[1])
             # print("Current price is near a resistance level:", level[1])
             should_buy = 'No'
             return should_buy
 
     for level in support_levels:
-       if abs(current_price - level[1]) < mean:
+    #    if abs(current_price - level[1]) < mean:
+        if abs(current_price - level[1])/current_price < 0.015:
             # print("Current price is near a support level:", level[1])
             should_buy = 'Yes'
             return should_buy
@@ -136,8 +139,8 @@ def check_1_3_6_months(ticker_symbols):
         #     stocks_waitlist.append(symbol)
         if one_month == 'Yes' and three_month == 'Yes' and six_month == 'Yes':
             stocks_to_buy.append(symbol)
-        elif one_month == 'Maybe' and three_month == 'Maybe' and six_month == 'Maybe':
-            stocks_to_buy.append(symbol)
+        # elif one_month == 'Maybe' and three_month == 'Maybe' and six_month == 'Maybe':
+        #     stocks_to_buy.append(symbol)
         else:
             stocks_waitlist.append(symbol)
     return stocks_to_buy, stocks_waitlist
@@ -150,7 +153,7 @@ def check_1_3_6_months(ticker_symbols):
     # get_support_resistance_levels(ticker_symbol, '2023-01-01', '2023-07-10')
 
 
-# print(check_1_3_6_months(['GWRE']))
+print(check_1_3_6_months(['AAPL']))
 # ticker_symbol = 'PWR'
 
 #prioritize 1 month, then if either 3 or 6 month say yes then buy
